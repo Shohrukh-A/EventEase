@@ -1,0 +1,39 @@
+@page "/register/{EventId:int}"
+@inject UserSessionService Session
+@using EventEase.Models
+@using EventEase.Shared
+
+<h3>Register for Event</h3>
+
+<EditForm Model="registration" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    
+    <div>
+        <label>Name:</label>
+        <InputText @bind-Value="registration.Name" />
+    </div>
+    <div>
+        <label>Email:</label>
+        <InputText @bind-Value="registration.Email" />
+    </div>
+
+    <button type="submit">Register</button>
+</EditForm>
+
+@if (submitted)
+{
+    <p>Thank you for registering!</p>
+}
+
+@code {
+    [Parameter] public int EventId { get; set; }
+    private RegistrationModel registration = new();
+    private bool submitted = false;
+
+    private void HandleValidSubmit()
+    {
+        Session.Register(EventId, registration);
+        submitted = true;
+    }
+}
