@@ -1,39 +1,75 @@
 @page "/register/{EventId:int}"
-@inject UserSessionService Session
-@using EventEase.Models
-@using EventEase.Shared
+@inject EventService EventService
+@inject RegistrationService RegistrationService
+@inject NavigationManager NavigationManager
 
-<h3>Register for Event</h3>
+@using EventEaseApp.Models
+@using System.ComponentModel.DataAnnotations
 
-<EditForm Model="registration" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
-    
-    <div>
-        <label>Name:</label>
-        <InputText @bind-Value="registration.Name" />
-    </div>
-    <div>
-        <label>Email:</label>
-        <InputText @bind-Value="registration.Email" />
-    </div>
+<PageTitle>Register for Event</PageTitle>
 
-    <button type="submit">Register</button>
-</EditForm>
+<h1 class="text-2xl font-bold mb-4">Register for @Event?.Title</h1>
 
-@if (submitted)
+@if (Event == null)
 {
-    <p>Thank you for registering!</p>
+    <p>Loading event details...</p>
+}
+else
+{
+    <EditForm Model="@Registration" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-4">
+            <label class="block mb-1">Name</label>
+            <InputText @bind-Value="Registration.Name" class="input" />
+            <ValidationMessage For="@(() => Registration.Name)" />
+        </div>
+
+        <div class="mb-4">
+            <label class="block mb-1">Email</label>
+            <InputText @bind-Value="Registration.Email" class="input" />
+            <ValidationMessage For="@(() => Registration.Email)" />
+        </div>
+
+        <div class="mb-4">
+            <label class="block mb-1">Comments (optional)</label>
+            <InputTextArea @bind-Value="Registration.Comments" class="input" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Submit Registration</button>
+    </EditForm>
+
+    @if (SuccessMessage != null)
+    {
+        <p class="text-green-600 mt-4">@SuccessMessage</p>
+    }
 }
 
 @code {
     [Parameter] public int EventId { get; set; }
-    private RegistrationModel registration = new();
-    private bool submitted = false;
 
-    private void HandleValidSubmit()
+    private Event? Event;
+    private Registration Registration = new();
+    private string? SuccessMessage;
+
+    protected override async Task OnInitializedAsync()
     {
-        Session.Register(EventId, registration);
-        submitted = true;
+        Event = await EventService.GetEventByIdAsync(EventId);
+        Registration.EventId = EventId;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var success = await RegistrationService.RegisterAsync(Registration);
+        if (success)
+        {
+            SuccessMessage = "Successfully registered!";
+            Registration = new Registration { EventId = EventId }; // Reset form
+        }
+        else
+        {
+            SuccessMessage = "Registration failed. Please try again.";
+        }
     }
 }
